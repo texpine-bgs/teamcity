@@ -197,7 +197,7 @@ class Configuration(six.with_metaclass(TypeWithDefault, object)):
         self.__logger_format = value
         self.logger_formatter = logging.Formatter(self.__logger_format)
 
-    def get_api_key_with_prefix(self, identifier):
+    def get_api_key_with_prefix(self, identifier=0):
         """Gets API key (with prefix if set).
 
         :param identifier: The identifier of apiKey.
@@ -209,30 +209,44 @@ class Configuration(six.with_metaclass(TypeWithDefault, object)):
         elif self.api_key.get(identifier):
             return self.api_key[identifier]
 
-    def get_basic_auth_token(self):
-        """Gets HTTP basic authentication header (string).
+    # def get_basic_auth_token(self, identifier=0):
+    #     """Gets HTTP basic authentication header (string).
 
-        :return: The token for basic HTTP authentication.
-        """
-        return urllib3.util.make_headers(
-            basic_auth=self.username + ':' + self.password
-        ).get('authorization')
+    #     :return: The token for basic HTTP authentication.
+    #     """
+        # return urllib3.util.make_headers(
+        #     basic_auth = self.username + ':' + self.password
+        # ).get('authorization')
 
-    def auth_settings(self):
+    def auth_settings(self, identifier=0):
         """Gets Auth Settings dict for api client.
 
         :return: The Auth Settings information dict.
         """
-        return {
-            'Basic':
-                {
-                    'type': 'basic',
-                    'in': 'header',
-                    'key': 'Authorization',
-                    'value': self.get_basic_auth_token()
-                },
-
-        }
+        # if a token identifier is present, use it
+        if identifier in self.api_key.keys(): 
+            return {
+                'Basic':
+                    {
+                        'type': 'bearer',
+                        'in': 'header',
+                        'key': 'Authorization',
+                        'value': self.get_api_key_with_prefix(identifier)
+                    },
+            }
+        # username and password as default, encrypted via URLLib3
+        else: 
+            return {
+                'Basic':
+                    {
+                        'type': 'basic',
+                        'in': 'header',
+                        'key': 'Authorization',
+                        'value': urllib3.util.make_headers(
+                            basic_auth = self.username + ':' + self.password
+                        ).get('authorization')
+                    },
+            }
 
     def to_debug_report(self):
         """Gets the essential information for debugging.

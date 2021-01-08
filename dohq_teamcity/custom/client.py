@@ -7,14 +7,29 @@ class TeamCity(ApiClient):
     def __init__(self, url, auth, proxy=None, configuration=None):
         configuration = configuration or Configuration()
         configuration.host = url
-        if isinstance(auth, tuple):
+        if isinstance(auth, tuple): 
+            # assumes username and password
             configuration.username, configuration.password = auth
+        elif isinstance(auth, str): 
+            # assumes access token
+            # default key is an integer with the amount of items in the dict
+            # it will self-increment in the future if this dict has more elements
+            auto_identifier = len(configuration.api_key)
+            configuration.api_key[auto_identifier] = auth
+            configuration.api_key_prefix[auto_identifier] = 'Bearer'
+
         if proxy is not None:
             configuration.proxy = proxy
         super(TeamCity, self).__init__(configuration=configuration)
         self.default_headers.update({'Content-type': 'application/json',
                                      'Accept': 'application/json',
                                      'Content-Encoding': 'utf-8'})
+
+        # if API keys are defined, 
+        # if 'Authorization' in configuration.api_key.keys():
+        #     self.default_headers.update(
+        #         {'Authorization': configuration.get_api_key_with_prefix('Authorization')}
+        #     )
 
         # Add "Managers" or APIs
         self.agents = AgentApi(self)
